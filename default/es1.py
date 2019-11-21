@@ -5,11 +5,25 @@ Created on 20 nov 2019
 '''
 import os
 from scipy.io import wavfile as w
-from sklearn.tree import DecisionTreeClassifier
 import numpy as np
 from sklearn.model_selection import cross_val_score
 import csv
 from sklearn.ensemble.forest import RandomForestClassifier
+
+"""FUNCTION"""
+def preprocess1(X,n_partitions=40):
+    output = []
+    mean_tot = np.mean(X)
+    std_tot = np.std(X)
+    X = [ (el-mean_tot)/std_tot for el in X ] # Standardization
+    l = len(X)
+    for i in range(n_partitions):
+        partition = X[int(i*l/n_partitions):int((i+1)*l/n_partitions)]
+        output.append(np.mean(partition))
+        output.append(np.std(partition))
+        output.append(np.max(partition))
+        output.append(np.min(partition))
+    return np.array(output)
 
 def dump_to_file(filename, assignments, dataset):
     with open(filename, mode="w", newline="") as csvfile:
@@ -39,17 +53,9 @@ for file in file_list:
     
 
 X_stat = []
-
 # Make matrix with statistic index
-
 for x in X:
-    row = np.array(x)
-    mean = (sum(x)/len(x))
-    var = np.var(row)
-    maximumm = max(x)
-    minimumm = min(x)
-    rows = [mean, var, maximumm, minimumm]
-    X_stat.append(rows)  
+    X_stat.append(preprocess1(x))
 
 clf = RandomForestClassifier()
 f1 = cross_val_score(clf, X_stat, y, cv=5, scoring='f1_macro')
@@ -68,15 +74,7 @@ for file in file_list:
 
 X_stat_eval = []
 for keys in X_eval.keys():
-        
-    for x in X_eval[keys]:
-        row = np.array(x)
-        mean = np.mean(x)
-        var = np.var(row)
-        maximumm = np.max(x)
-        minimumm = np.min(x)
-        rows = [mean, var, maximumm, minimumm]
-        X_stat_eval.append(rows) 
+    X_stat_eval.append(preprocess1(X_eval[keys])) 
     
 clf_ev = RandomForestClassifier()
 clf_ev.fit(X_stat, y)
