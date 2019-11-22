@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.model_selection import cross_val_score
 import csv
 from sklearn.ensemble.forest import RandomForestClassifier
+from matplotlib.pyplot import psd
 
 """FUNCTION"""
 def preprocess1(X,n_partitions=40):
@@ -51,14 +52,15 @@ for file in file_list:
     """Label y"""
     y.append(int(label[0]))
     
-
+X_psd = []
 X_stat = []
 # Make matrix with statistic index
 for x in X:
+    X_psd.append(psd(x)[0]) # function for fourier spectrum
     X_stat.append(preprocess1(x))
 
 clf = RandomForestClassifier()
-f1 = cross_val_score(clf, X_stat, y, cv=5, scoring='f1_macro')
+f1 = cross_val_score(clf, X_psd, y, cv=5, scoring='f1_macro')
 avg_f1 = np.mean(f1)
 print("Accuracy: "+str(avg_f1))
 
@@ -72,13 +74,15 @@ for file in file_list:
     filename = str(file).split(".")
     X_eval[str(filename[0])] = (f[1].astype(np.float32)) #passing to floating points 
 
+X_psd_eval = []
 X_stat_eval = []
 for keys in X_eval.keys():
+    X_psd_eval.append(psd(X_eval[keys])[0])
     X_stat_eval.append(preprocess1(X_eval[keys])) 
     
 clf_ev = RandomForestClassifier()
-clf_ev.fit(X_stat, y)
-assignments = clf_ev.predict(X_stat_eval)
+clf_ev.fit(X_psd, y)
+assignments = clf_ev.predict(X_psd_eval)
 
 dump_to_file("result.csv", assignments, X_eval)
 print("Computed finished")
