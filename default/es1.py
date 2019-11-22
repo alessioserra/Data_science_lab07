@@ -10,6 +10,7 @@ from sklearn.model_selection import cross_val_score
 import csv
 from sklearn.ensemble.forest import RandomForestClassifier
 from matplotlib.pyplot import psd
+from scipy.signal import welch
 
 """FUNCTION"""
 def preprocess1(X,n_partitions=40):
@@ -54,13 +55,15 @@ for file in file_list:
     
 X_psd = []
 X_stat = []
+X_welch = []
 # Make matrix with statistic index
 for x in X:
+    X_welch.append(welch(x)[1])
     X_psd.append(psd(x)[0]) # function for fourier spectrum
     X_stat.append(preprocess1(x))
 
 clf = RandomForestClassifier()
-f1 = cross_val_score(clf, X_psd, y, cv=5, scoring='f1_macro')
+f1 = cross_val_score(clf, X_welch, y, cv=5, scoring='f1_macro')
 avg_f1 = np.mean(f1)
 print("Accuracy: "+str(avg_f1))
 
@@ -76,13 +79,15 @@ for file in file_list:
 
 X_psd_eval = []
 X_stat_eval = []
+X_welch_eval = []
 for keys in X_eval.keys():
+    X_welch_eval.append((welch(X_eval[keys])[1]))
     X_psd_eval.append(psd(X_eval[keys])[0])
     X_stat_eval.append(preprocess1(X_eval[keys])) 
     
 clf_ev = RandomForestClassifier()
-clf_ev.fit(X_psd, y)
-assignments = clf_ev.predict(X_psd_eval)
+clf_ev.fit(X_welch, y)
+assignments = clf_ev.predict(X_welch_eval)
 
 dump_to_file("result.csv", assignments, X_eval)
 print("Computed finished")
